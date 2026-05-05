@@ -1,6 +1,11 @@
 terraform {
   required_version = ">= 1.3.0"
 
+  backend "gcs" {
+    bucket = "thiago-terraform-state"
+    prefix = "terraform/spark-pi/state"
+  }
+
   required_providers {
     kubectl = {
       source  = "gavinbunney/kubectl"
