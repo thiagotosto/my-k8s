@@ -38,6 +38,13 @@ resource "kind_cluster" "my-cluster" {
 }
 
 ## MODULES
+module "trino" {
+  count  = var.trino ? 1 : 0
+  source = "${path.root}/modules/trino"
+
+  trino_namespace = "trino"
+}
+
 module "spark-operator" {
   count  = var.spark_operator ? 1 : 0
   source = "${path.root}/modules/spark-operator"
