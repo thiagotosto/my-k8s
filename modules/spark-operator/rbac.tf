@@ -9,8 +9,8 @@ resource "kubernetes_role" "spark_driver" {
 
   rule {
     api_groups = [""]
-    resources  = ["pods", "services", "configmaps"]
-    verbs      = ["get", "list", "watch", "create", "delete", "update", "patch"]
+    resources  = ["pods", "services", "configmaps", "persistentvolumeclaims"]
+    verbs      = ["get", "list", "watch", "create", "delete", "deletecollection", "update", "patch"]
   }
 }
 

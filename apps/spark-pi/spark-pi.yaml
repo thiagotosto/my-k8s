@@ -1,23 +1,57 @@
 apiVersion: sparkoperator.k8s.io/v1beta2
 kind: SparkApplication
 metadata:
-  name: spark-pi
+  name: spark-lance-gcs
   namespace: spark-jobs
 spec:
-  type: Scala
+  type: Python
   mode: cluster
-  image: "apache/spark:3.5.0"
+  image: "spark-lance-gcs:3.5.0"
   imagePullPolicy: IfNotPresent
-  mainClass: org.apache.spark.examples.SparkPi
-  mainApplicationFile: "local:///opt/spark/examples/jars/spark-examples_2.12-3.5.0.jar"
+  mainApplicationFile: "local:///opt/spark/scripts/job.py"
   sparkVersion: "3.5.0"
+  timeToLiveSeconds: 300
   restartPolicy:
     type: Never
+  sparkConf:
+    "spark.hadoop.fs.gs.impl": "com.google.cloud.hadoop.fs.gcs.GoogleHadoopFileSystem"
+    "spark.hadoop.fs.AbstractFileSystem.gs.impl": "com.google.cloud.hadoop.fs.gcs.GoogleHadoopFS"
+    "spark.hadoop.google.cloud.auth.type": "APPLICATION_DEFAULT"
+    "spark.sql.catalog.lance": "org.lance.spark.LanceNamespaceSparkCatalog"
+    "spark.sql.catalog.lance.impl": "dir"
+    "spark.sql.catalog.lance.root": "gs://thiagos-lake"
+    "spark.sql.extensions": "org.lance.spark.extensions.LanceSparkSessionExtensions"
+  volumes:
+    - name: script
+      configMap:
+        name: spark-lance-script
+    - name: gcs-adc
+      secret:
+        secretName: gcs-adc
   driver:
     cores: 1
-    memory: "512m"
+    memory: "1g"
     serviceAccount: spark
+    env:
+      - name: GOOGLE_APPLICATION_CREDENTIALS
+        value: /var/secrets/google/application_default_credentials.json
+      - name: GCS_BUCKET
+        value: thiagos-lake
+    volumeMounts:
+      - name: script
+        mountPath: /opt/spark/scripts
+      - name: gcs-adc
+        mountPath: /var/secrets/google
+
   executor:
     cores: 1
     instances: 2
-    memory: "512m"
+    memory: "1g"
+    env:
+      - name: GOOGLE_APPLICATION_CREDENTIALS
+        value: /var/secrets/google/application_default_credentials.json
+      - name: GCS_BUCKET
+        value: thiagos-lake
+    volumeMounts:
+      - name: gcs-adc
+        mountPath: /var/secrets/google
