@@ -9,4 +9,11 @@ RUN curl -fL \
       "https://repo1.maven.org/maven2/com/google/cloud/bigdataoss/gcs-connector/hadoop3-2.2.22/gcs-connector-hadoop3-2.2.22-shaded.jar" \
       -o /opt/spark/jars/gcs-connector-hadoop3-2.2.22-shaded.jar
 
+RUN pip install --no-cache-dir \
+      sentence-transformers \
+      open-clip-torch \
+      Pillow \
+      lancedb \
+      google-cloud-storage
+
 USER 185

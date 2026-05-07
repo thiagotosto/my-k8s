@@ -30,7 +30,7 @@ spec:
         secretName: gcs-adc
   driver:
     cores: 1
-    memory: "1g"
+    memory: "2g"
     serviceAccount: spark
     env:
       - name: GOOGLE_APPLICATION_CREDENTIALS
@@ -46,7 +46,7 @@ spec:
   executor:
     cores: 1
     instances: 2
-    memory: "1g"
+    memory: "3g"
     env:
       - name: GOOGLE_APPLICATION_CREDENTIALS
         value: /var/secrets/google/application_default_credentials.json
