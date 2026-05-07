@@ -1,0 +1,51 @@
+image:
+  repository: trino-lance-gcs
+  tag: "476-v0.2.2"
+  pullPolicy: Never
+
+server:
+  config:
+    query:
+      maxMemory: "256MB"
+
+additionalCatalogs:
+  lance: |
+    connector.name=lance
+    lance.impl=dir
+    lance.root=gs://${gcs_bucket}/
+
+env:
+  - name: GOOGLE_APPLICATION_CREDENTIALS
+    value: /etc/trino/gcs/application_default_credentials.json
+
+coordinator:
+  additionalJVMConfig:
+    - "--add-opens=java.base/java.nio=ALL-UNNAMED"
+    - "--add-opens=java.base/sun.misc=ALL-UNNAMED"
+  config:
+    query:
+      maxMemoryPerNode: "128MB"
+  additionalVolumes:
+    - name: gcs-credentials
+      secret:
+        secretName: ${gcs_secret_name}
+  additionalVolumeMounts:
+    - name: gcs-credentials
+      mountPath: /etc/trino/gcs
+      readOnly: true
+
+worker:
+  additionalJVMConfig:
+    - "--add-opens=java.base/java.nio=ALL-UNNAMED"
+    - "--add-opens=java.base/sun.misc=ALL-UNNAMED"
+  config:
+    query:
+      maxMemoryPerNode: "128MB"
+  additionalVolumes:
+    - name: gcs-credentials
+      secret:
+        secretName: ${gcs_secret_name}
+  additionalVolumeMounts:
+    - name: gcs-credentials
+      mountPath: /etc/trino/gcs
+      readOnly: true

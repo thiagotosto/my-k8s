@@ -7,12 +7,32 @@ resource "kubernetes_namespace" "trino" {
   }
 }
 
+resource "kubernetes_secret" "gcs_adc" {
+  metadata {
+    name      = var.gcs_secret_name
+    namespace = kubernetes_namespace.trino.metadata[0].name
+  }
+
+  data = {
+    "application_default_credentials.json" = file(pathexpand(var.credentials_path))
+  }
+
+  depends_on = [kubernetes_namespace.trino]
+}
+
 resource "helm_release" "trino" {
   name       = "trino"
   repository = "https://trinodb.github.io/charts"
   chart      = "trino"
   version    = var.trino_version
   namespace  = kubernetes_namespace.trino.metadata[0].name
+
+  values = [
+    templatefile("${path.module}/values.yaml", {
+      gcs_secret_name = var.gcs_secret_name
+      gcs_bucket      = var.gcs_bucket
+    })
+  ]
 
   set = concat([
     {
@@ -34,5 +54,5 @@ resource "helm_release" "trino" {
     }]
   )
 
-  depends_on = [kubernetes_namespace.trino]
+  depends_on = [kubernetes_namespace.trino, kubernetes_secret.gcs_adc, null_resource.trino_custom_image]
 }

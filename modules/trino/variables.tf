@@ -33,3 +33,20 @@ variable "extra_helm_values" {
   type        = map(string)
   default     = {}
 }
+
+variable "gcs_secret_name" {
+  description = "Name of the Kubernetes secret containing GCS ADC credentials"
+  type        = string
+}
+
+variable "gcs_bucket" {
+  description = "GCS bucket name where Lance tables are stored"
+  type        = string
+  default     = "thiagos-lake"
+}
+
+variable "credentials_path" {
+  description = "Path to GCS Application Default Credentials JSON file on the local machine"
+  type        = string
+  default     = "~/.config/gcloud/application_default_credentials.json"
+}
