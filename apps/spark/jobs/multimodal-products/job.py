@@ -169,10 +169,10 @@ def main():
     df.show(5, truncate=60)
 
     spark.sql("CREATE NAMESPACE IF NOT EXISTS lance.bronze")
-    df.writeTo("lance.bronze.`multimodal-catalog`").createOrReplace()
+    df.writeTo("lance.bronze.multimodal_products").createOrReplace()
 
-    count = spark.sql("SELECT COUNT(*) FROM lance.bronze.`multimodal-catalog`").first()[0]
-    print(f"Wrote {count} rows to lance.bronze.multimodal-catalog")
+    count = spark.sql("SELECT COUNT(*) FROM lance.bronze.multimodal_products").first()[0]
+    print(f"Wrote {count} rows to lance.bronze.multimodal_products")
 
     create_vector_indexes(bucket, gcs_creds)
 

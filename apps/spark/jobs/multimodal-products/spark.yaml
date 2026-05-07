@@ -1,7 +1,7 @@
 apiVersion: sparkoperator.k8s.io/v1beta2
 kind: SparkApplication
 metadata:
-  name: spark-lance-gcs
+  name: spark-multimodal-products
   namespace: spark-jobs
 spec:
   type: Python
@@ -24,7 +24,7 @@ spec:
   volumes:
     - name: script
       configMap:
-        name: spark-lance-script
+        name: spark-multimodal-products-script
     - name: gcs-adc
       secret:
         secretName: gcs-adc

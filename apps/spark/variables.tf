@@ -9,3 +9,9 @@ variable "kube_context" {
   type        = string
   default     = "kind-my-cluster"
 }
+
+variable "excluded_jobs" {
+  description = "Job names to skip when deploying"
+  type        = list(string)
+  default     = []
+}
