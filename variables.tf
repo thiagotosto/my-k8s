@@ -8,6 +8,11 @@ variable "trino" {
   default = true
 }
 
+variable "gcs_bucket" {
+  type    = bool
+  default = true
+}
+
 variable "kubeconfig_path" {
   description = "Path to the kubeconfig file"
   type        = string

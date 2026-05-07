@@ -8,9 +8,21 @@ terraform {
       source  = "justenwalker/kind"
       version = "0.17.0"
     }
+    google = {
+      source  = "hashicorp/google"
+      version = "~> 6.0"
+    }
+    null = {
+      source  = "hashicorp/null"
+      version = "~> 3.0"
+    }
   }
 }
 
+
+provider "google" {}
+
+provider "null" {}
 
 provider "kubernetes" {
   config_path    = var.kubeconfig_path
@@ -40,14 +52,20 @@ resource "kind_cluster" "my-cluster" {
 ## MODULES
 module "trino" {
   count  = var.trino ? 1 : 0
-  source = "${path.root}/modules/trino"
+  source = "./modules/trino"
 
   trino_namespace = "trino"
+  gcs_secret_name = "gcs-adc"
+}
+
+module "gcs_bucket" {
+  count  = (var.gcs_bucket && var.trino) ? 1 : 0
+  source = "./modules/gcs-bucket"
 }
 
 module "spark-operator" {
   count  = var.spark_operator ? 1 : 0
-  source = "${path.root}/modules/spark-operator"
+  source = "./modules/spark-operator"
 
   spark_namespace = "spark-jobs"
 }
