@@ -20,7 +20,9 @@ terraform {
 }
 
 
-provider "google" {}
+provider "google" {
+  project = "my-k8s-495416"
+}
 
 provider "null" {}
 
@@ -62,6 +64,14 @@ module "gcs_bucket" {
   count  = (var.gcs_bucket && var.trino) ? 1 : 0
   source = "./modules/gcs-bucket"
 }
+
+module "juslake_gcs_bucket" {
+  count  = (var.gcs_bucket && var.trino) ? 1 : 0
+  source = "./modules/gcs-bucket"
+
+  bucket_name = "juslake"
+}
+
 
 module "spark-operator" {
   count  = var.spark_operator ? 1 : 0

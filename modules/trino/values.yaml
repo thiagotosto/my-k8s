@@ -9,10 +9,14 @@ server:
       maxMemory: "256MB"
 
 additionalCatalogs:
-  lance: |
+  bronze: |
     connector.name=lance
     lance.impl=dir
-    lance.root=gs://${gcs_bucket}/
+    lance.root=gs://${gcs_bucket}/bronze/
+  sandbox: |
+    connector.name=lance
+    lance.impl=dir
+    lance.root=gs://${gcs_bucket}/sandbox/
 
 env:
   - name: GOOGLE_APPLICATION_CREDENTIALS

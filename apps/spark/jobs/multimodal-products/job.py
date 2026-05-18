@@ -5,6 +5,10 @@ from pyspark.sql.functions import pandas_udf, col, concat_ws, lit
 from pyspark.sql.types import (
     StructType, StructField, StringType, IntegerType, FloatType, ArrayType,
 )
+import lancedb
+from lancedb.table import LanceTable
+import pyarrow as pa
+from google.cloud import storage
 
 # Module-level model caches — initialized once per executor process.
 _text_model = None
@@ -102,77 +106,82 @@ SCHEMA = StructType([
 ])
 
 
+def _find_lance_table_path(bucket: str, namespace: str, table_name: str, creds_path: str) -> str:
+
+    client = storage.Client.from_service_account_json(creds_path)
+    iterator = client.list_blobs(bucket, prefix="bronze/", delimiter="/")
+    prefixes = set()
+    for page in iterator.pages:
+        prefixes.update(page.prefixes)
+
+    suffix = f"_{namespace}${table_name}"
+    for prefix in prefixes:
+        dir_name = prefix.rstrip("/").split("/")[-1]
+        if dir_name.endswith(suffix):
+            return f"gs://{bucket}/{prefix.rstrip('/')}"
+
+    raise ValueError(f"Lance table not found: {namespace}.{table_name} in gs://{bucket}/bronze/")
+
+
 def create_vector_indexes(bucket: str, gcs_creds: str) -> None:
-    """Find the lance-spark table on GCS and create IVF_PQ vector indexes."""
-    from google.cloud import storage as gcs
-    import lance
 
-    client = gcs.Client()
-    bucket_client = client.bucket(bucket)
-    blobs = list(bucket_client.list_blobs(prefix="", delimiter="/"))
-    table_dir = None
-    for prefix in blobs.prefixes:
-        if "bronze" in prefix and "multimodal" in prefix:
-            table_dir = f"gs://{bucket}/{prefix.rstrip('/')}"
-            break
+    table_path = _find_lance_table_path(bucket, "default", "multimodal_products", gcs_creds)
+    print(f"Found table at: {table_path}")
 
-    if not table_dir:
-        print("Warning: could not locate multimodal-catalog directory; skipping index creation")
-        return
-
-    print(f"Found table at: {table_dir}")
-    dataset = lance.dataset(
-        table_dir,
+    db = lancedb.connect(
+        f"gs://{bucket}/bronze",
         storage_options={"google_application_credentials": gcs_creds},
     )
+    tbl = LanceTable.open(db, "multimodal_products", location=table_path)
+
+    tbl.alter_columns({"path": "text_embedding", "data_type": pa.list_(pa.float32(), 384)})
+    tbl.alter_columns({"path": "image_embedding", "data_type": pa.list_(pa.float32(), 512)})
+    print("Cast embedding columns to FixedSizeList for IVF_PQ indexing")
+
     for col_name, dim in [("text_embedding", 384), ("image_embedding", 512)]:
-        # num_sub_vectors must divide the dimension evenly
         sub_vecs = 12 if dim == 384 else 16
         try:
-            dataset.create_index(
-                col_name,
+            tbl.create_index(
+                vector_column_name=col_name,
                 index_type="IVF_PQ",
-                num_partitions=1,
+                num_partitions=4,
                 num_sub_vectors=sub_vecs,
                 metric="cosine",
                 replace=True,
             )
-            print(f"Created IVF_PQ index on {col_name} ({dim}d)")
+            print(f"IVF_PQ index created on {col_name} ({dim}d)")
         except Exception as exc:
-            print(f"Index creation skipped for {col_name} ({exc}); brute-force scan will be used")
+            print(f"Index skipped for {col_name} ({exc}); brute-force scan will be used")
 
 
 def main():
-    spark = (
-        SparkSession.builder
-        .appName("spark-lance-multimodal")
-        .getOrCreate()
-    )
+    spark = SparkSession.builder.appName("spark-multimodal").getOrCreate()
 
-    bucket = os.environ["GCS_BUCKET"]
+    bucket    = os.environ["GCS_BUCKET"]
     gcs_creds = os.environ["GOOGLE_APPLICATION_CREDENTIALS"]
 
     df = spark.createDataFrame(CATALOG, SCHEMA)
-
     df = df.withColumn(
         "image_uri",
         concat_ws("", lit(f"gs://{bucket}/images/"), col("id").cast(StringType()), lit(".jpg")),
     )
 
-    print("Generating text embeddings (sentence-transformers all-MiniLM-L6-v2, 384d)...")
+    print("Generating text embeddings (all-MiniLM-L6-v2, 384d)...")
     df = df.withColumn("text_embedding", encode_text(col("description")))
-
     print("Generating image embeddings (CLIP ViT-B-32, 512d)...")
     df = df.withColumn("image_embedding", encode_image(col("image_desc")))
-
     df = df.drop("image_desc")
+    df = df.cache()
+    df.count()  # materialize all partitions so writeTo reads from cache, not re-runs UDFs
     df.show(5, truncate=60)
 
-    spark.sql("CREATE NAMESPACE IF NOT EXISTS lance.bronze")
-    df.writeTo("lance.bronze.multimodal_products").createOrReplace()
-
-    count = spark.sql("SELECT COUNT(*) FROM lance.bronze.multimodal_products").first()[0]
-    print(f"Wrote {count} rows to lance.bronze.multimodal_products")
+    spark.sql("CREATE NAMESPACE IF NOT EXISTS bronze.default")
+    (
+        df.writeTo("bronze.default.multimodal_products")
+          .using("lance")
+          .createOrReplace()
+    )
+    print("Lance table written → bronze.default.multimodal_products")
 
     create_vector_indexes(bucket, gcs_creds)
 

@@ -1,7 +1,7 @@
 apiVersion: sparkoperator.k8s.io/v1beta2
 kind: SparkApplication
 metadata:
-  name: spark-multimodal-products
+  name: spark-hierarquical-processes
   namespace: spark-jobs
 spec:
   type: Python
@@ -18,13 +18,13 @@ spec:
     "spark.hadoop.fs.AbstractFileSystem.gs.impl": "com.google.cloud.hadoop.fs.gcs.GoogleHadoopFS"
     "spark.hadoop.google.cloud.auth.type": "APPLICATION_DEFAULT"
     "spark.sql.extensions": "org.lance.spark.extensions.LanceSparkSessionExtensions"
-    "spark.sql.catalog.bronze": "org.lance.spark.LanceNamespaceSparkCatalog"
-    "spark.sql.catalog.bronze.impl": "dir"
-    "spark.sql.catalog.bronze.root": "gs://thiagos-lake/bronze"
+    "spark.sql.catalog.sandbox": "org.lance.spark.LanceNamespaceSparkCatalog"
+    "spark.sql.catalog.sandbox.impl": "dir"
+    "spark.sql.catalog.sandbox.root": "gs://thiagos-lake/sandbox"
   volumes:
     - name: script
       configMap:
-        name: spark-multimodal-products-script
+        name: spark-hierarquical-processes-script
     - name: gcs-adc
       secret:
         secretName: gcs-sa
@@ -33,19 +33,21 @@ spec:
         claimName: spark-models-pvc
   driver:
     cores: 1
-    memory: "2g"
+    memory: "4g"
     serviceAccount: spark
     env:
       - name: GOOGLE_APPLICATION_CREDENTIALS
         value: /var/secrets/google/application_default_credentials.json
       - name: GCS_BUCKET
         value: thiagos-lake
+      - name: GCS_PDF_PATH
+        value: gs://juslake/thiago_x_meli.pdf
       - name: HF_HOME
         value: /opt/spark/models
       - name: TORCH_HOME
         value: /opt/spark/models/torch
-      - name: HF_HUB_OFFLINE
-        value: "1"
+      - name: DOCLING_CACHE_DIR
+        value: /tmp/docling-models
     volumeMounts:
       - name: script
         mountPath: /opt/spark/scripts

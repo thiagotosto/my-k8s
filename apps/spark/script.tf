@@ -29,5 +29,6 @@ resource "kubectl_manifest" "spark_application" {
   depends_on = [
     kubectl_manifest.spark_script,
     null_resource.spark_custom_image,
+    null_resource.download_models,
   ]
 }
