@@ -50,3 +50,15 @@ variable "credentials_path" {
   type        = string
   default     = "~/.config/gcloud/application_default_credentials.json"
 }
+
+variable "ar_repository" {
+  description = "Artifact Registry repository URL for Docker images"
+  type        = string
+  default     = "us-central1-docker.pkg.dev/jusl-496520/my-k8s"
+}
+
+variable "workload_identity_sa_email" {
+  description = "GCP SA email for Workload Identity annotation on the Trino service account"
+  type        = string
+  default     = ""
+}

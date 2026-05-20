@@ -4,6 +4,6 @@ resource "null_resource" "trino_custom_image" {
   }
 
   provisioner "local-exec" {
-    command = "docker build -t trino-lance-gcs:476-v0.2.2 ${path.module} && kind load docker-image trino-lance-gcs:476-v0.2.2 --name my-cluster"
+    command = "docker build -t ${var.ar_repository}/trino-lance-gcs:476-v0.2.2 ${path.module} && docker push ${var.ar_repository}/trino-lance-gcs:476-v0.2.2"
   }
 }
