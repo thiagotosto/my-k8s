@@ -43,7 +43,7 @@ spec:
       - name: GCS_BUCKET
         value: justeam
       - name: GCS_PDF_PATH
-        value: gs://justeam/thiago_x_meli.pdf
+        value: gs://justeam/raw/thiago_x_meli.pdf
       - name: HF_HOME
         value: /opt/spark/models
       - name: TORCH_HOME

@@ -38,9 +38,9 @@ def _parse_gcs_uri(uri: str):
 
 
 def _find_lance_table_path(
-    bucket: str, gcs_prefix: str, namespace: str, table_name: str, creds_path: str
+    bucket: str, gcs_prefix: str, namespace: str, table_name: str
 ) -> str:
-    client = storage.Client.from_service_account_json(creds_path)
+    client = storage.Client()
     iterator = client.list_blobs(bucket, prefix=f"{gcs_prefix}/", delimiter="/")
     prefixes = set()
     for page in iterator.pages:
@@ -57,16 +57,13 @@ def _find_lance_table_path(
     )
 
 
-def create_indexes(bucket: str, gcs_creds: str) -> None:
+def create_indexes(bucket: str) -> None:
     table_path = _find_lance_table_path(
-        bucket, "sandbox", "default", "hierarquical_cases", gcs_creds
+        bucket, "sandbox", "default", "hierarquical_cases"
     )
     print(f"Found Lance table at: {table_path}")
 
-    db = lancedb.connect(
-        f"gs://{bucket}/sandbox",
-        storage_options={"google_application_credentials": gcs_creds},
-    )
+    db = lancedb.connect(f"gs://{bucket}/sandbox")
     tbl = LanceTable.open(db, "hierarquical_cases", location=table_path)
 
     tbl.alter_columns(
@@ -98,12 +95,11 @@ def main():
     spark = SparkSession.builder.appName("spark-hierarquical-cases").getOrCreate()
 
     bucket = os.environ["GCS_BUCKET"]
-    gcs_creds = os.environ["GOOGLE_APPLICATION_CREDENTIALS"]
     pdf_uri = os.environ["GCS_PDF_PATH"]
 
     # --- Phase 1: Download PDF to driver local temp file ---
     pdf_bucket, pdf_blob = _parse_gcs_uri(pdf_uri)
-    gcs_client = storage.Client.from_service_account_json(gcs_creds)
+    gcs_client = storage.Client()
     with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp:
         gcs_client.bucket(pdf_bucket).blob(pdf_blob).download_to_filename(tmp.name)
         pdf_path = tmp.name
@@ -219,7 +215,7 @@ def main():
     print("Lance table written → sandbox.default.hierarquical_cases")
 
     # --- Phase 10: Vector index + FTS index ---
-    create_indexes(bucket, gcs_creds)
+    create_indexes(bucket)
 
     spark.stop()
 
