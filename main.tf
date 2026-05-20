@@ -191,7 +191,7 @@ module "juslake_gcs_bucket" {
   count  = (var.gcs_bucket && var.trino) ? 1 : 0
   source = "./modules/gcs-bucket"
 
-  bucket_name = "juslake"
+  bucket_name = "justeam"
 }
 
 module "spark-operator" {

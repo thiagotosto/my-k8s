@@ -20,7 +20,7 @@ spec:
     "spark.sql.extensions": "org.lance.spark.extensions.LanceSparkSessionExtensions"
     "spark.sql.catalog.bronze": "org.lance.spark.LanceNamespaceSparkCatalog"
     "spark.sql.catalog.bronze.impl": "dir"
-    "spark.sql.catalog.bronze.root": "gs://juslake/bronze"
+    "spark.sql.catalog.bronze.root": "gs://justeam/bronze"
   volumes:
     - name: script
       configMap:
@@ -41,7 +41,7 @@ spec:
         effect: NoSchedule
     env:
       - name: GCS_BUCKET
-        value: juslake
+        value: justeam
       - name: HF_HOME
         value: /opt/spark/models
       - name: TORCH_HOME
@@ -67,7 +67,7 @@ spec:
         effect: NoSchedule
     env:
       - name: GCS_BUCKET
-        value: juslake
+        value: justeam
       - name: HF_HOME
         value: /opt/spark/models
       - name: TORCH_HOME

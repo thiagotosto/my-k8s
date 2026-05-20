@@ -42,7 +42,7 @@ variable "gcs_secret_name" {
 variable "gcs_bucket" {
   description = "GCS bucket name where Lance tables are stored"
   type        = string
-  default     = "juslake"
+  default     = "justeam"
 }
 
 variable "credentials_path" {
