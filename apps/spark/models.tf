@@ -8,7 +8,7 @@ resource "kubectl_manifest" "nfs_storage_pvc" {
     }
     spec = {
       accessModes      = ["ReadWriteOnce"]
-      storageClassName = "standard"
+      storageClassName = "standard-rwo"
       resources = {
         requests = { storage = "5Gi" }
       }
@@ -112,7 +112,7 @@ resource "null_resource" "spark_models_pv_pvc" {
 resource "null_resource" "download_models" {
   triggers = {
     pvc_setup = null_resource.spark_models_pv_pvc.id
-    image_tag = "spark-lance-gcs:4.0.2"
+    image_tag = "${var.ar_repository}/spark-lance-gcs:4.0.2"
   }
 
   provisioner "local-exec" {
@@ -133,7 +133,7 @@ resource "null_resource" "download_models" {
             restartPolicy: OnFailure
             containers:
             - name: downloader
-              image: spark-lance-gcs:4.0.2
+              image: ${var.ar_repository}/spark-lance-gcs:4.0.2
               imagePullPolicy: IfNotPresent
               env:
               - name: HF_HOME
