@@ -131,6 +131,23 @@ resource "google_container_node_pool" "spark" {
   }
 }
 
+## ARTIFACT REGISTRY
+data "google_project" "default" {}
+
+resource "google_artifact_registry_repository" "my_k8s" {
+  count         = var.cluster_type == "gke" ? 1 : 0
+  location      = var.gcp_region
+  repository_id = "my-k8s"
+  format        = "DOCKER"
+}
+
+resource "google_project_iam_member" "ar_reader" {
+  count   = var.cluster_type == "gke" ? 1 : 0
+  project = data.google_project.default.id
+  role    = "roles/artifactregistry.reader"
+  member  = "serviceAccount:${data.google_project.default.number}-compute@developer.gserviceaccount.com"
+}
+
 ## MODULES
 module "trino" {
   count  = var.trino ? 1 : 0
