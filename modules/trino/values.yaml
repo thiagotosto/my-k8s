@@ -5,6 +5,7 @@ image:
 
 %{ if workload_identity_sa_email != "" ~}
 serviceAccount:
+  create: true
   annotations:
     iam.gke.io/gcp-service-account: "${workload_identity_sa_email}"
 %{ endif ~}
