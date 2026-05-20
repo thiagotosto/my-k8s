@@ -20,7 +20,7 @@ terraform {
 }
 
 provider "google" {
-  project = "my-k8s-495416"
+  project = "jusl-496520"
 }
 
 provider "null" {}
@@ -77,7 +77,7 @@ resource "google_container_cluster" "my_cluster" {
   deletion_protection      = false
 
   workload_identity_config {
-    workload_pool = "my-k8s-495416.svc.id.goog"
+    workload_pool = "jusl-496520.svc.id.goog"
   }
 }
 
@@ -148,13 +148,43 @@ resource "google_project_iam_member" "ar_reader" {
   member  = "serviceAccount:${data.google_project.default.number}-compute@developer.gserviceaccount.com"
 }
 
+## WORKLOAD IDENTITY
+resource "google_service_account" "gke_workloads" {
+  count      = var.cluster_type == "gke" ? 1 : 0
+  account_id = "gke-workloads"
+}
+
+resource "google_project_iam_member" "workloads_gcs" {
+  count   = var.cluster_type == "gke" ? 1 : 0
+  project = data.google_project.default.id
+  role    = "roles/storage.objectAdmin"
+  member  = "serviceAccount:${google_service_account.gke_workloads[0].email}"
+}
+
+resource "google_service_account_iam_member" "spark_wi" {
+  count              = var.cluster_type == "gke" ? 1 : 0
+  service_account_id = google_service_account.gke_workloads[0].name
+  role               = "roles/iam.workloadIdentityUser"
+  member             = "serviceAccount:jusl-496520.svc.id.goog[spark-jobs/spark]"
+  depends_on         = [module.spark-operator]
+}
+
+resource "google_service_account_iam_member" "trino_wi" {
+  count              = var.cluster_type == "gke" ? 1 : 0
+  service_account_id = google_service_account.gke_workloads[0].name
+  role               = "roles/iam.workloadIdentityUser"
+  member             = "serviceAccount:jusl-496520.svc.id.goog[trino/trino]"
+  depends_on         = [module.trino]
+}
+
 ## MODULES
 module "trino" {
   count  = var.trino ? 1 : 0
   source = "./modules/trino"
 
-  trino_namespace = "trino"
-  gcs_secret_name = "gcs-adc"
+  trino_namespace            = "trino"
+  gcs_secret_name            = "gcs-adc"
+  workload_identity_sa_email = try(google_service_account.gke_workloads[0].email, "")
 }
 
 module "gcs_bucket" {
@@ -173,5 +203,6 @@ module "spark-operator" {
   count  = var.spark_operator ? 1 : 0
   source = "./modules/spark-operator"
 
-  spark_namespace = "spark-jobs"
+  spark_namespace            = "spark-jobs"
+  workload_identity_sa_email = try(google_service_account.gke_workloads[0].email, "")
 }
