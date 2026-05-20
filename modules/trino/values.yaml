@@ -1,7 +1,13 @@
 image:
-  repository: trino-lance-gcs
+  repository: ${ar_repository}/trino-lance-gcs
   tag: "476-v0.2.2"
-  pullPolicy: Never
+  pullPolicy: IfNotPresent
+
+%{ if workload_identity_sa_email != "" ~}
+serviceAccount:
+  annotations:
+    iam.gke.io/gcp-service-account: "${workload_identity_sa_email}"
+%{ endif ~}
 
 server:
   config:
@@ -18,10 +24,6 @@ additionalCatalogs:
     lance.impl=dir
     lance.root=gs://${gcs_bucket}/sandbox/
 
-env:
-  - name: GOOGLE_APPLICATION_CREDENTIALS
-    value: /etc/trino/gcs/application_default_credentials.json
-
 coordinator:
   additionalJVMConfig:
     - "--add-opens=java.base/java.nio=ALL-UNNAMED"
@@ -29,14 +31,6 @@ coordinator:
   config:
     query:
       maxMemoryPerNode: "128MB"
-  additionalVolumes:
-    - name: gcs-credentials
-      secret:
-        secretName: ${gcs_secret_name}
-  additionalVolumeMounts:
-    - name: gcs-credentials
-      mountPath: /etc/trino/gcs
-      readOnly: true
 
 worker:
   additionalJVMConfig:
@@ -45,11 +39,3 @@ worker:
   config:
     query:
       maxMemoryPerNode: "128MB"
-  additionalVolumes:
-    - name: gcs-credentials
-      secret:
-        secretName: ${gcs_secret_name}
-  additionalVolumeMounts:
-    - name: gcs-credentials
-      mountPath: /etc/trino/gcs
-      readOnly: true

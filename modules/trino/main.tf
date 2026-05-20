@@ -29,8 +29,10 @@ resource "helm_release" "trino" {
 
   values = [
     templatefile("${path.module}/values.yaml", {
-      gcs_secret_name = var.gcs_secret_name
-      gcs_bucket      = var.gcs_bucket
+      ar_repository              = var.ar_repository
+      gcs_bucket                 = var.gcs_bucket
+      gcs_secret_name            = var.gcs_secret_name
+      workload_identity_sa_email = var.workload_identity_sa_email
     })
   ]
 
