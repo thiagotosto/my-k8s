@@ -6,7 +6,7 @@ metadata:
 spec:
   type: Python
   mode: cluster
-  image: "spark-lance-gcs:4.0.2"
+  image: "us-central1-docker.pkg.dev/jusl-496520/my-k8s/spark-lance-gcs:4.0.2"
   imagePullPolicy: IfNotPresent
   mainApplicationFile: "local:///opt/spark/scripts/job.py"
   sparkVersion: "4.0.2"
@@ -25,9 +25,6 @@ spec:
     - name: script
       configMap:
         name: spark-multimodal-products-script
-    - name: gcs-adc
-      secret:
-        secretName: gcs-sa
     - name: models
       persistentVolumeClaim:
         claimName: spark-models-pvc
@@ -35,9 +32,14 @@ spec:
     cores: 1
     memory: "2g"
     serviceAccount: spark
+    nodeSelector:
+      pool: spark
+    tolerations:
+      - key: pool
+        operator: Equal
+        value: spark
+        effect: NoSchedule
     env:
-      - name: GOOGLE_APPLICATION_CREDENTIALS
-        value: /var/secrets/google/application_default_credentials.json
       - name: GCS_BUCKET
         value: thiagos-lake
       - name: HF_HOME
@@ -49,8 +51,6 @@ spec:
     volumeMounts:
       - name: script
         mountPath: /opt/spark/scripts
-      - name: gcs-adc
-        mountPath: /var/secrets/google
       - name: models
         mountPath: /opt/spark/models
 
@@ -58,9 +58,14 @@ spec:
     cores: 1
     instances: 2
     memory: "3g"
+    nodeSelector:
+      pool: spark
+    tolerations:
+      - key: pool
+        operator: Equal
+        value: spark
+        effect: NoSchedule
     env:
-      - name: GOOGLE_APPLICATION_CREDENTIALS
-        value: /var/secrets/google/application_default_credentials.json
       - name: GCS_BUCKET
         value: thiagos-lake
       - name: HF_HOME
@@ -70,7 +75,5 @@ spec:
       - name: HF_HUB_OFFLINE
         value: "1"
     volumeMounts:
-      - name: gcs-adc
-        mountPath: /var/secrets/google
       - name: models
         mountPath: /opt/spark/models
