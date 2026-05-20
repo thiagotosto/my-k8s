@@ -187,11 +187,6 @@ module "trino" {
   workload_identity_sa_email = try(google_service_account.gke_workloads[0].email, "")
 }
 
-module "gcs_bucket" {
-  count  = (var.gcs_bucket && var.trino) ? 1 : 0
-  source = "./modules/gcs-bucket"
-}
-
 module "juslake_gcs_bucket" {
   count  = (var.gcs_bucket && var.trino) ? 1 : 0
   source = "./modules/gcs-bucket"

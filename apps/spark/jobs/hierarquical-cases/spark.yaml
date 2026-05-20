@@ -20,7 +20,7 @@ spec:
     "spark.sql.extensions": "org.lance.spark.extensions.LanceSparkSessionExtensions"
     "spark.sql.catalog.sandbox": "org.lance.spark.LanceNamespaceSparkCatalog"
     "spark.sql.catalog.sandbox.impl": "dir"
-    "spark.sql.catalog.sandbox.root": "gs://thiagos-lake/sandbox"
+    "spark.sql.catalog.sandbox.root": "gs://juslake/sandbox"
   volumes:
     - name: script
       configMap:
@@ -41,7 +41,7 @@ spec:
         effect: NoSchedule
     env:
       - name: GCS_BUCKET
-        value: thiagos-lake
+        value: juslake
       - name: GCS_PDF_PATH
         value: gs://juslake/thiago_x_meli.pdf
       - name: HF_HOME
@@ -69,7 +69,7 @@ spec:
         effect: NoSchedule
     env:
       - name: GCS_BUCKET
-        value: thiagos-lake
+        value: juslake
       - name: HF_HOME
         value: /opt/spark/models
       - name: TORCH_HOME
