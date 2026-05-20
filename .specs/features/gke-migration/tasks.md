@@ -198,7 +198,7 @@ primeira vez em modo GKE).
 - [x] `google_project_iam_member.workloads_gcs` (role: `roles/storage.objectAdmin`, member: `serviceAccount:${google_service_account.gke_workloads[0].email}`) com `count = var.cluster_type == "gke" ? 1 : 0`
 - [x] `google_service_account_iam_member.spark_wi` (role: `roles/iam.workloadIdentityUser`, member: `serviceAccount:jusl-496520.svc.id.goog[spark-jobs/spark]`, depends_on: module.spark-operator) com `count = var.cluster_type == "gke" ? 1 : 0`
 - [x] `google_service_account_iam_member.trino_wi` (role: `roles/iam.workloadIdentityUser`, member: `serviceAccount:jusl-496520.svc.id.goog[trino/trino]`, depends_on: module.trino) com `count = var.cluster_type == "gke" ? 1 : 0`
-- [ ] Gate: `terraform apply -var cluster_type=gke` completa sem erros
+- [x] Gate: `terraform apply -var cluster_type=gke` completa sem erros
 
 **Verify:**
 ```bash
@@ -221,7 +221,7 @@ gcloud projects get-iam-policy jusl-496520 --format=json \
 **Tests:** none
 **Gate:** quick
 **Commit:** `feat(infra): add Workload Identity GCP SA and K8s SA bindings (GKE mode only)`
-**Status:** 🔲 CODE DONE — apply gate pending
+**Status:** ✅ COMPLETED
 
 ---
 
@@ -246,7 +246,7 @@ kubectl get serviceaccount spark -n spark-jobs \
 **Tests:** none
 **Gate:** quick
 **Commit:** `feat(spark-operator): add Workload Identity annotation to spark ServiceAccount`
-**Status:** 🔲 CODE DONE — apply gate pending
+**Status:** ✅ COMPLETED
 
 ---
 
@@ -273,7 +273,7 @@ gcloud artifacts docker images list \
 **Tests:** none
 **Gate:** quick
 **Commit:** `feat(trino): replace kind image load with Artifact Registry push`
-**Status:** 🔲 CODE DONE — apply gate pending
+**Status:** ✅ COMPLETED
 
 ---
 
@@ -304,7 +304,7 @@ kubectl get deployment trino -n trino \
 **Tests:** none
 **Gate:** quick
 **Commit:** `feat(trino): update image to AR, add WI SA annotation, remove GCS secret mount`
-**Status:** 🔲 CODE DONE — apply gate pending
+**Status:** ✅ COMPLETED
 
 ---
 
