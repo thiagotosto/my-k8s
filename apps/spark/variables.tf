@@ -7,7 +7,13 @@ variable "kubeconfig_path" {
 variable "kube_context" {
   description = "Kubernetes context to use"
   type        = string
-  default     = "kind-my-cluster"
+  default     = "gke_jusl-496520_us-central1-a_my-cluster"
+}
+
+variable "ar_repository" {
+  description = "Artifact Registry repository URL for Docker images"
+  type        = string
+  default     = "us-central1-docker.pkg.dev/jusl-496520/my-k8s"
 }
 
 variable "excluded_jobs" {

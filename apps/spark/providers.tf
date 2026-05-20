@@ -2,7 +2,7 @@ terraform {
   required_version = ">= 1.3.0"
 
   backend "gcs" {
-    bucket = "thiago-terraform-state"
+    bucket = "juslake-terraform-state"
     prefix = "terraform/spark-pi/state"
   }
 
