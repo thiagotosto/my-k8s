@@ -14,6 +14,9 @@ resource "kubernetes_service_account" "spark" {
     labels = {
       "app.kubernetes.io/managed-by" = "terraform"
     }
+    annotations = var.workload_identity_sa_email != "" ? {
+      "iam.gke.io/gcp-service-account" = var.workload_identity_sa_email
+    } : {}
   }
 }
 
