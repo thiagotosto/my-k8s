@@ -1,2 +1,2 @@
-cluster_type    = "kind"
+cluster_type    = "gke"
 kubeconfig_path = "~/.kube/config"

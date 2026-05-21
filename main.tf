@@ -114,6 +114,7 @@ resource "google_container_node_pool" "spark" {
 
   node_config {
     machine_type = "e2-standard-4"
+    spot = true
 
     labels = {
       pool = "spark"
