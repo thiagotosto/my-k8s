@@ -12,11 +12,14 @@
 | Imagens Docker | Artifact Registry us-central1 | Substitui `kind load docker-image` que não funciona no GKE | 2026-05-18 |
 | cluster_type var | default "kind" | Não quebra estado atual do Kind ao fazer apply sem flag | 2026-05-18 |
 | AR registry name | "my-k8s" | Consistente com nome do projeto | 2026-05-18 |
+| cases-pdf-processor cold start | Custom Docker image com modelos Docling pré-baked | Evita download de ~500MB de modelos a cada cold start (~2-3min → ~10s) | 2026-05-21 |
+| cases-pdf-processor deployment | Cloud Run v2 (ambas as funções) | Suporta imagem Docker pré-construída; mesmo padrão do null_resource de spark/image.tf | 2026-05-21 |
+| cases-pdf-processor AR repos | Repositório AR dedicado por função (cases-pdf-indexer, cases-pdf-converter) | Isolamento de imagens por função | 2026-05-21 |
 
 ## Active Work
 
-- Feature `gke-migration`: spec/design/tasks criados, implementação pendente (próxima sessão)
-- Spec files: criados em `.specs/` (esta sessão)
+- Feature `gke-migration`: spec/design/tasks criados, implementação pendente
+- Feature `cases-pdf-processor`: ✅ implementação completa (T1–T10), pronto para `terraform apply`
 
 ## Blockers
 

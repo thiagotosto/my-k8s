@@ -202,3 +202,11 @@ module "spark-operator" {
   spark_namespace            = "spark-jobs"
   workload_identity_sa_email = try(google_service_account.gke_workloads[0].email, "")
 }
+
+module "cases_pdf_processor" {
+  count          = var.cases_pdf_processor ? 1 : 0
+  source         = "./modules/cases-pdf-processor"
+  project_id     = data.google_project.default.project_id
+  project_number = data.google_project.default.number
+  region         = var.gcp_region
+}

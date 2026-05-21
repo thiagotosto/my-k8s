@@ -46,3 +46,8 @@ variable "kube_context" {
   type        = string
   default     = null
 }
+
+variable "cases_pdf_processor" {
+  type    = bool
+  default = true
+}
