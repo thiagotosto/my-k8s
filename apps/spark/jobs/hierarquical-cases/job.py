@@ -128,7 +128,7 @@ def main():
             F.max("page").alias("max_page"),
         )
         .orderBy("min_page")
-        .limit(2)
+        .limit(4)
     )
     doc_ranges = df_min_max.collect()
     print(f"Processing {len(doc_ranges)} documents: {[r['idx'] for r in doc_ranges]}")
@@ -209,7 +209,6 @@ def main():
     # --- Phase 9: Write to Lance sandbox catalog ---
     spark.sql("CREATE NAMESPACE IF NOT EXISTS sandbox.default")
     result.writeTo("sandbox.default.hierarquical_cases") \
-          .overwrite() \
           .using("lance") \
           .createOrReplace()
     print("Lance table written → sandbox.default.hierarquical_cases")
