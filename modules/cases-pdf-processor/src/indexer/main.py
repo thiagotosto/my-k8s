@@ -14,6 +14,9 @@ def cases_pdf_indexer(cloud_event):
     bucket_name = data["bucket"]
     file_path = data["name"]
 
+    if not file_path.startswith("raw/cases_pdf/"):
+        return
+
     storage_client = storage.Client()
     blob = storage_client.bucket(bucket_name).blob(file_path)
 

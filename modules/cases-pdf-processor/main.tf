@@ -207,7 +207,7 @@ resource "google_cloud_run_v2_service" "converter" {
 
 resource "google_eventarc_trigger" "indexer" {
   name     = "cases-pdf-indexer-trigger"
-  location = var.region
+  location = "us"
   matching_criteria {
     attribute = "type"
     value     = "google.cloud.storage.object.v1.finalized"
@@ -215,11 +215,6 @@ resource "google_eventarc_trigger" "indexer" {
   matching_criteria {
     attribute = "bucket"
     value     = "justeam"
-  }
-  matching_criteria {
-    attribute = "subject"
-    value     = "objects/raw/cases_pdf/**"
-    operator  = "match-path-pattern"
   }
   destination {
     cloud_run_service {
