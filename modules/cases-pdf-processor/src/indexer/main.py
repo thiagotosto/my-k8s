@@ -11,6 +11,7 @@ from pypdf import PdfReader
 @functions_framework.cloud_event
 def cases_pdf_indexer(cloud_event):
     data = cloud_event.data
+    print(f"Event: {data}")
     bucket_name = data["bucket"]
     file_path = data["name"]
 

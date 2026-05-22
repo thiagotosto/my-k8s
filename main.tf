@@ -93,7 +93,7 @@ resource "google_container_node_pool" "system" {
   }
 
   node_config {
-    machine_type = "e2-standard-4"
+    machine_type = "e2-standard-2"
 
     workload_metadata_config {
       mode = "GKE_METADATA"
@@ -192,7 +192,8 @@ module "juslake_gcs_bucket" {
   count  = (var.gcs_bucket && var.trino) ? 1 : 0
   source = "./modules/gcs-bucket"
 
-  bucket_name = "justeam"
+  bucket_name   = "justeam"
+  admin_members = ["user:tostotech10@gmail.com"]
 }
 
 module "spark-operator" {

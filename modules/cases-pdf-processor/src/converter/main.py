@@ -13,6 +13,7 @@ from google.cloud import storage
 def cases_pdf_converter(cloud_event):
     raw = base64.b64decode(cloud_event.data["message"]["data"]).decode("utf-8")
     msg = json.loads(raw)
+    print(f"Event: {msg}")
     doc_id = msg["doc_id"]
     min_page = int(msg["min_page"])
     max_page = int(msg["max_page"])
@@ -21,7 +22,7 @@ def cases_pdf_converter(cloud_event):
 
     storage_client = storage.Client()
     output_blob_path = f"raw/cases_md/{Path(file_path).stem}/{doc_id}.md"
-    output_blob = storage_client.bucket("justeam").blob(output_blob_path)
+    output_blob = storage_client.bucket(bucket_name).blob(output_blob_path)
     if output_blob.exists():
         return
 

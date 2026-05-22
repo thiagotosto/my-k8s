@@ -10,3 +10,9 @@ variable "location" {
   default     = "US"
 }
 
+variable "admin_members" {
+  description = "List of IAM members with roles/storage.objectAdmin on the bucket (e.g. user:you@gmail.com)"
+  type        = list(string)
+  default     = []
+}
+

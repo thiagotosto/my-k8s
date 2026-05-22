@@ -11,11 +11,6 @@ resource "google_pubsub_topic" "cases_pdf_doc_events" {
   name = "cases-pdf-doc-events"
 }
 
-resource "google_pubsub_subscription" "cases_pdf_doc_events_sub" {
-  name                 = "cases-pdf-doc-events-sub"
-  topic                = google_pubsub_topic.cases_pdf_doc_events.id
-  ack_deadline_seconds = 600
-}
 
 ## ARTIFACT REGISTRY
 
@@ -93,11 +88,16 @@ resource "google_storage_bucket_iam_member" "converter_gcs_creator" {
   }
 }
 
-resource "google_pubsub_subscription_iam_member" "converter_subscriber" {
-  subscription = google_pubsub_subscription.cases_pdf_doc_events_sub.name
-  role         = "roles/pubsub.subscriber"
-  member       = "serviceAccount:${google_service_account.converter.email}"
+resource "google_storage_bucket_iam_member" "converter_gcs_viewer_output" {
+  bucket = "justeam"
+  role   = "roles/storage.objectViewer"
+  member = "serviceAccount:${google_service_account.converter.email}"
+  condition {
+    title      = "converter_output_prefix_viewer"
+    expression = "resource.name.startsWith(\"projects/_/buckets/justeam/objects/raw/cases_md/\")"
+  }
 }
+
 
 resource "google_project_iam_member" "converter_eventarc_receiver" {
   project = var.project_id
@@ -170,7 +170,7 @@ resource "google_cloud_run_v2_service" "indexer" {
       }
       resources {
         limits = {
-          memory = "512Mi"
+          memory = "2Gi"
           cpu    = "1"
         }
       }
@@ -222,6 +222,7 @@ resource "google_eventarc_trigger" "indexer" {
       region  = var.region
     }
   }
+
   service_account = google_service_account.indexer.email
 }
 
@@ -243,5 +244,6 @@ resource "google_eventarc_trigger" "converter" {
       region  = var.region
     }
   }
+  
   service_account = google_service_account.converter.email
 }
