@@ -178,6 +178,30 @@ resource "google_service_account_iam_member" "trino_wi" {
   depends_on         = [module.trino]
 }
 
+resource "google_project_service" "vertex_ai" {
+  count   = var.cluster_type == "gke" ? 1 : 0
+  service = "aiplatform.googleapis.com"
+
+  disable_on_destroy = false
+}
+
+resource "google_project_iam_member" "workloads_vertex_ai" {
+  count   = var.cluster_type == "gke" ? 1 : 0
+  project = data.google_project.default.id
+  role    = "roles/aiplatform.user"
+  member  = "serviceAccount:${google_service_account.gke_workloads[0].email}"
+
+  depends_on = [google_project_service.vertex_ai[0]]
+}
+
+resource "google_service_account_iam_member" "paperclip_wi" {
+  count              = (var.cluster_type == "gke" && var.paperclip) ? 1 : 0
+  service_account_id = google_service_account.gke_workloads[0].name
+  role               = "roles/iam.workloadIdentityUser"
+  member             = "serviceAccount:jusl-496520.svc.id.goog[paperclip/paperclip]"
+  depends_on         = [module.paperclip]
+}
+
 ## MODULES
 module "trino" {
   count  = var.trino ? 1 : 0
@@ -210,4 +234,13 @@ module "cases_pdf_processor" {
   project_id     = data.google_project.default.project_id
   project_number = data.google_project.default.number
   region         = var.gcp_region
+}
+
+module "paperclip" {
+  count                      = var.paperclip ? 1 : 0
+  source                     = "./modules/paperclip"
+  ar_repository              = "${var.gcp_region}-docker.pkg.dev/${data.google_project.default.project_id}/my-k8s"
+  vertex_project_id          = data.google_project.default.project_id
+  vertex_region              = var.gcp_region
+  workload_identity_sa_email = try(google_service_account.gke_workloads[0].email, "")
 }

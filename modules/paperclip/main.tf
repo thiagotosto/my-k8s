@@ -7,6 +7,16 @@ resource "kubernetes_namespace" "paperclip" {
   }
 }
 
+resource "kubernetes_service_account" "paperclip" {
+  metadata {
+    name      = "paperclip"
+    namespace = kubernetes_namespace.paperclip.metadata[0].name
+    annotations = {
+      "iam.gke.io/gcp-service-account" = var.workload_identity_sa_email
+    }
+  }
+}
+
 ## PostgreSQL
 resource "kubernetes_secret" "postgres_creds" {
   metadata {
@@ -110,14 +120,18 @@ resource "kubernetes_service" "postgres" {
 
 resource "null_resource" "paperclip_image" {
   triggers = {
-    git_ref = var.paperclip_git_ref
+    git_ref        = var.paperclip_git_ref
+    dockerfile_sha = filesha256("${path.module}/Dockerfile")
   }
 
   provisioner "local-exec" {
     command = <<-EOT
       rm -rf /tmp/paperclip-build && \
       git clone --depth=1 https://github.com/paperclipai/paperclip /tmp/paperclip-build && \
-      docker build -t ${var.ar_repository}/paperclip:${var.paperclip_git_ref} /tmp/paperclip-build && \
+      docker build -t paperclip-base:${var.paperclip_git_ref} /tmp/paperclip-build && \
+      docker build -t ${var.ar_repository}/paperclip:${var.paperclip_git_ref} \
+        --build-arg BASE_IMAGE=paperclip-base:${var.paperclip_git_ref} \
+        -f ${path.module}/Dockerfile ${path.module} && \
       docker push ${var.ar_repository}/paperclip:${var.paperclip_git_ref}
     EOT
   }
@@ -132,7 +146,6 @@ resource "kubernetes_secret" "paperclip_env" {
   }
 
   data = {
-    OPENAI_API_KEY     = var.openai_api_key
     BETTER_AUTH_SECRET = var.better_auth_secret
     DATABASE_URL       = "postgresql://paperclip:${var.postgres_password}@postgres.${var.namespace}.svc.cluster.local:5432/paperclip"
   }
@@ -182,10 +195,16 @@ resource "kubernetes_deployment" "paperclip" {
       }
 
       spec {
+        service_account_name = kubernetes_service_account.paperclip.metadata[0].name
+
+        security_context {
+          fs_group = 1000
+        }
+
         init_container {
           name    = "init-permissions"
           image   = "busybox:latest"
-          command = ["sh", "-c", "mkdir -p /paperclip/instances/default/logs && chmod -R 777 /paperclip"]
+          command = ["sh", "-c", "chmod 775 /paperclip"]
           volume_mount {
             name       = "paperclip-data"
             mount_path = "/paperclip"
@@ -270,6 +289,7 @@ resource "kubernetes_deployment" "paperclip" {
     kubernetes_secret.paperclip_env,
     kubernetes_persistent_volume_claim.paperclip_data,
     null_resource.paperclip_image,
+    kubernetes_service_account.paperclip,
   ]
 }
 

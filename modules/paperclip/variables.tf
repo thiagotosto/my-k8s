@@ -4,10 +4,20 @@ variable "namespace" {
   default     = "paperclip"
 }
 
-variable "openai_api_key" {
-  description = "OpenAI API key for Paperclip"
+variable "vertex_project_id" {
+  description = "GCP project ID for Vertex AI (used by Claude Code CLI)"
   type        = string
-  sensitive   = true
+}
+
+variable "vertex_region" {
+  description = "GCP region for Vertex AI"
+  type        = string
+  default     = "us-central1"
+}
+
+variable "workload_identity_sa_email" {
+  description = "Email of the GCP SA to annotate the K8s ServiceAccount with"
+  type        = string
 }
 
 variable "better_auth_secret" {

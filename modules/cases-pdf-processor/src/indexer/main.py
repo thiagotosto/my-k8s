@@ -1,3 +1,4 @@
+import base64
 import json
 import os
 import re
@@ -8,15 +9,16 @@ from google.cloud import pubsub_v1, storage
 from pypdf import PdfReader
 
 
-@functions_framework.cloud_event
-def cases_pdf_indexer(cloud_event):
-    data = cloud_event.data
+@functions_framework.http
+def cases_pdf_indexer(request):
+    envelope = request.get_json(silent=True)
+    data = json.loads(base64.b64decode(envelope["message"]["data"]).decode("utf-8"))
     print(f"Event: {data}")
     bucket_name = data["bucket"]
     file_path = data["name"]
 
     if not file_path.startswith("raw/cases_pdf/"):
-        return
+        return "OK", 200
 
     storage_client = storage.Client()
     blob = storage_client.bucket(bucket_name).blob(file_path)
@@ -51,3 +53,4 @@ def cases_pdf_indexer(cloud_event):
             "file_path": file_path,
         }).encode("utf-8")
         publisher.publish(topic, message).result()
+    return "OK", 200

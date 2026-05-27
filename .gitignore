@@ -3,9 +3,12 @@
 terraform.tfstate
 terraform.tfstate.backup
 *.tfvars.local
+secrets.auto.tfvars
 override.tf
 override.tf.json
 *_override.tf
 *_override.tf.json
 playground*
 credentials
+terraform.tfplan
+terraform-show.md

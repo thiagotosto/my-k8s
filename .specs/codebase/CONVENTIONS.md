@@ -69,8 +69,40 @@ triggers = { dockerfile_md5 = filemd5("${path.module}/Dockerfile") }
 
 ## File Organization
 
-- Cada módulo tem: `main.tf` (ou arquivos por recurso), `variables.tf`, `outputs.tf`, `providers.tf`
-- apps/spark separa responsabilidades: `image.tf`, `script.tf`, `secret.tf`, `models.tf`, `providers.tf`
+### Module file convention
+
+Modules split resources by **infrastructure concern** — each file owns one logical group.
+
+**Always present:**
+- `variables.tf` — all `variable` blocks
+- `outputs.tf` — all `output` blocks
+- `providers.tf` — `terraform {}` + `provider {}` blocks (when needed)
+- `main.tf` — `locals {}` only; no resource definitions
+
+**Concern files (create only when the module has those resources):**
+
+| File | Resources |
+|------|-----------|
+| `image.tf` | `null_resource` Docker image builds |
+| `rbac.tf` | `kubernetes_role`, `kubernetes_role_binding` |
+| `secret.tf` | `kubernetes_secret` |
+| `iam.tf` | GCP service accounts, IAM bindings (`*_iam_member`, `*_iam_binding`) |
+| `pubsub.tf` | `google_pubsub_topic`, `google_pubsub_subscription` |
+| `cloudrun.tf` | `google_cloud_run_v2_service` |
+| `artifact_registry.tf` | `google_artifact_registry_repository` |
+| `gcs.tf` | `google_storage_notification`, `google_storage_bucket` |
+| `workloads.tf` | `kubernetes_deployment`, `kubernetes_manifest` (StatefulSets, etc.) |
+| `services.tf` | `kubernetes_service` |
+| `pv_pvc.tf` | `kubernetes_persistent_volume_claim`, `kubernetes_persistent_volume` |
+| `namespace.tf` | `kubernetes_namespace` (standalone modules without an `operator.tf`) |
+
+Existing examples in this repo:
+- `spark-operator/` — `operator.tf` (namespace + SA + Helm release), `rbac.tf`
+- `trino/` — `image.tf`; `main.tf` holds the sole Helm release (single-concern, acceptable)
+- `apps/spark/` — `image.tf`, `secret.tf`, `script.tf`, `models.tf`
+
+Do not create a file unless it contains at least one resource.
+
 - Jobs Spark: um diretório por job com `job.py` + `spark.yaml`
 
 ## Comments

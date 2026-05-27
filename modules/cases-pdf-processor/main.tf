@@ -1,14 +1,28 @@
 terraform {}
 
 locals {
-  indexer_image   = "${var.region}-docker.pkg.dev/${var.project_id}/cases-pdf-indexer/image:latest"
-  converter_image = "${var.region}-docker.pkg.dev/${var.project_id}/cases-pdf-converter/image:latest"
+  indexer_tag     = substr(md5("${filemd5("${path.module}/src/indexer/Dockerfile")}${filemd5("${path.module}/src/indexer/main.py")}"), 0, 8)
+  converter_tag   = substr(md5("${filemd5("${path.module}/src/converter/Dockerfile")}${filemd5("${path.module}/src/converter/main.py")}"), 0, 8)
+  indexer_image   = "${var.region}-docker.pkg.dev/${var.project_id}/cases-pdf-indexer/image:${local.indexer_tag}"
+  converter_image = "${var.region}-docker.pkg.dev/${var.project_id}/cases-pdf-converter/image:${local.converter_tag}"
 }
 
 ## PUB/SUB
 
+resource "google_pubsub_topic" "cases_pdf_gcs_events" {
+  name = "cases-pdf-gcs-events"
+}
+
+resource "google_pubsub_topic" "cases_pdf_gcs_events_dlq" {
+  name = "cases-pdf-gcs-events-dlq"
+}
+
 resource "google_pubsub_topic" "cases_pdf_doc_events" {
   name = "cases-pdf-doc-events"
+}
+
+resource "google_pubsub_topic" "cases_pdf_doc_events_dlq" {
+  name = "cases-pdf-doc-events-dlq"
 }
 
 
@@ -54,11 +68,6 @@ resource "google_pubsub_topic_iam_member" "indexer_publisher" {
   member = "serviceAccount:${google_service_account.indexer.email}"
 }
 
-resource "google_project_iam_member" "indexer_eventarc_receiver" {
-  project = var.project_id
-  role    = "roles/eventarc.eventReceiver"
-  member  = "serviceAccount:${google_service_account.indexer.email}"
-}
 
 resource "google_project_iam_member" "indexer_run_invoker" {
   project = var.project_id
@@ -99,11 +108,6 @@ resource "google_storage_bucket_iam_member" "converter_gcs_viewer_output" {
 }
 
 
-resource "google_project_iam_member" "converter_eventarc_receiver" {
-  project = var.project_id
-  role    = "roles/eventarc.eventReceiver"
-  member  = "serviceAccount:${google_service_account.converter.email}"
-}
 
 resource "google_project_iam_member" "converter_run_invoker" {
   project = var.project_id
@@ -111,12 +115,36 @@ resource "google_project_iam_member" "converter_run_invoker" {
   member  = "serviceAccount:${google_service_account.converter.email}"
 }
 
-## IAM — EVENTARC AGENTS
+## IAM — PUB/SUB AGENTS
 
-resource "google_project_iam_member" "gcs_sa_pubsub_publisher" {
-  project = var.project_id
-  role    = "roles/pubsub.publisher"
-  member  = "serviceAccount:service-${var.project_number}@gs-project-accounts.iam.gserviceaccount.com"
+resource "google_pubsub_topic_iam_member" "gcs_sa_gcs_events_publisher" {
+  topic  = google_pubsub_topic.cases_pdf_gcs_events.id
+  role   = "roles/pubsub.publisher"
+  member = "serviceAccount:service-${var.project_number}@gs-project-accounts.iam.gserviceaccount.com"
+}
+
+resource "google_pubsub_topic_iam_member" "pubsub_sa_gcs_dlq_publisher" {
+  topic  = google_pubsub_topic.cases_pdf_gcs_events_dlq.id
+  role   = "roles/pubsub.publisher"
+  member = "serviceAccount:service-${var.project_number}@gcp-sa-pubsub.iam.gserviceaccount.com"
+}
+
+resource "google_pubsub_topic_iam_member" "pubsub_sa_doc_dlq_publisher" {
+  topic  = google_pubsub_topic.cases_pdf_doc_events_dlq.id
+  role   = "roles/pubsub.publisher"
+  member = "serviceAccount:service-${var.project_number}@gcp-sa-pubsub.iam.gserviceaccount.com"
+}
+
+resource "google_pubsub_subscription_iam_member" "pubsub_sa_indexer_subscriber" {
+  subscription = google_pubsub_subscription.indexer.id
+  role         = "roles/pubsub.subscriber"
+  member       = "serviceAccount:service-${var.project_number}@gcp-sa-pubsub.iam.gserviceaccount.com"
+}
+
+resource "google_pubsub_subscription_iam_member" "pubsub_sa_converter_subscriber" {
+  subscription = google_pubsub_subscription.converter.id
+  role         = "roles/pubsub.subscriber"
+  member       = "serviceAccount:service-${var.project_number}@gcp-sa-pubsub.iam.gserviceaccount.com"
 }
 
 resource "google_project_iam_member" "pubsub_sa_token_creator" {
@@ -203,47 +231,61 @@ resource "google_cloud_run_v2_service" "converter" {
   depends_on = [null_resource.converter_image]
 }
 
-## EVENTARC TRIGGERS
+## GCS NOTIFICATION + PUSH SUBSCRIPTIONS
 
-resource "google_eventarc_trigger" "indexer" {
-  name     = "cases-pdf-indexer-trigger"
-  location = "us"
-  matching_criteria {
-    attribute = "type"
-    value     = "google.cloud.storage.object.v1.finalized"
-  }
-  matching_criteria {
-    attribute = "bucket"
-    value     = "justeam"
-  }
-  destination {
-    cloud_run_service {
-      service = google_cloud_run_v2_service.indexer.name
-      region  = var.region
-    }
-  }
-
-  service_account = google_service_account.indexer.email
+resource "google_storage_notification" "cases_pdf" {
+  bucket             = "justeam"
+  payload_format     = "JSON_API_V1"
+  topic              = google_pubsub_topic.cases_pdf_gcs_events.id
+  event_types        = ["OBJECT_FINALIZE"]
+  object_name_prefix = "raw/cases_pdf/"
+  depends_on         = [google_pubsub_topic_iam_member.gcs_sa_gcs_events_publisher]
 }
 
-resource "google_eventarc_trigger" "converter" {
-  name     = "cases-pdf-converter-trigger"
-  location = var.region
-  matching_criteria {
-    attribute = "type"
-    value     = "google.cloud.pubsub.topic.v1.messagePublished"
+resource "google_pubsub_subscription" "indexer" {
+  name  = "cases-pdf-indexer-sub"
+  topic = google_pubsub_topic.cases_pdf_gcs_events.id
+
+  ack_deadline_seconds = 600
+
+  dead_letter_policy {
+    dead_letter_topic     = google_pubsub_topic.cases_pdf_gcs_events_dlq.id
+    max_delivery_attempts = var.max_delivery_attempts
   }
-  transport {
-    pubsub {
-      topic = google_pubsub_topic.cases_pdf_doc_events.id
+
+  retry_policy {
+    minimum_backoff = "10s"
+    maximum_backoff = "600s"
+  }
+
+  push_config {
+    push_endpoint = google_cloud_run_v2_service.indexer.uri
+    oidc_token {
+      service_account_email = google_service_account.indexer.email
     }
   }
-  destination {
-    cloud_run_service {
-      service = google_cloud_run_v2_service.converter.name
-      region  = var.region
+}
+
+resource "google_pubsub_subscription" "converter" {
+  name  = "cases-pdf-converter-sub"
+  topic = google_pubsub_topic.cases_pdf_doc_events.id
+
+  ack_deadline_seconds = 600
+
+  dead_letter_policy {
+    dead_letter_topic     = google_pubsub_topic.cases_pdf_doc_events_dlq.id
+    max_delivery_attempts = var.max_delivery_attempts
+  }
+
+  retry_policy {
+    minimum_backoff = "10s"
+    maximum_backoff = "600s"
+  }
+
+  push_config {
+    push_endpoint = google_cloud_run_v2_service.converter.uri
+    oidc_token {
+      service_account_email = google_service_account.converter.email
     }
   }
-  
-  service_account = google_service_account.converter.email
 }

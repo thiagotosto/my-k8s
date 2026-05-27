@@ -51,3 +51,9 @@ variable "cases_pdf_processor" {
   type    = bool
   default = true
 }
+
+variable "paperclip" {
+  type    = bool
+  default = false
+}
+

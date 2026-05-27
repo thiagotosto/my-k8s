@@ -9,9 +9,10 @@ from docling.document_converter import DocumentConverter
 from google.cloud import storage
 
 
-@functions_framework.cloud_event
-def cases_pdf_converter(cloud_event):
-    raw = base64.b64decode(cloud_event.data["message"]["data"]).decode("utf-8")
+@functions_framework.http
+def cases_pdf_converter(request):
+    envelope = request.get_json(silent=True)
+    raw = base64.b64decode(envelope["message"]["data"]).decode("utf-8")
     msg = json.loads(raw)
     print(f"Event: {msg}")
     doc_id = msg["doc_id"]
@@ -36,4 +37,8 @@ def cases_pdf_converter(cloud_event):
         page_range=(min_page, max_page),
     ).document.export_to_markdown()
 
-    output_blob.upload_from_string(markdown, content_type="text/markdown")
+    output_blob.upload_from_string(
+        markdown.encode("utf-8"),
+        content_type="text/markdown; charset=utf-8",
+    )
+    return "OK", 200
