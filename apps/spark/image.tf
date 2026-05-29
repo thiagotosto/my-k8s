@@ -1,6 +1,7 @@
 resource "null_resource" "spark_custom_image" {
   triggers = {
     dockerfile_md5 = filemd5("${path.module}/Dockerfile")
+    lib_hash       = sha1(join("", [for f in sort(fileset("${path.module}/lib", "**")) : filesha1("${path.module}/lib/${f}")]))
   }
 
   provisioner "local-exec" {

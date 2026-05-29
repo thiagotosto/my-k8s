@@ -27,7 +27,8 @@ RUN pip install --no-cache-dir --timeout=120 \
       google-cloud-storage \
       pypdf
 
-RUN pip install --no-cache-dir --timeout=600 --retries=5 \
-      docling
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+COPY lib/ /opt/spark/lib/
+RUN uv pip install --system --no-cache /opt/spark/lib/
 
 USER 185

@@ -20,6 +20,18 @@
 
 - Feature `gke-migration`: spec/design/tasks criados, implementação pendente
 - Feature `cases-pdf-processor`: ✅ implementação completa (T1–T10), pronto para `terraform apply`
+- Feature `spark-etl-framework`: ✅ implementação completa (T1–T9), 34/34 testes passando
+- Feature `adapt-jobs-to-spark-etl`: ✅ implementação completa (T1–T5), 41/41 testes passando
+  - `LanceSink` estendido com VectorIndexSpec, ScalarIndexSpec, FTSIndexSpec (discriminated union)
+  - `hierarquical-cases` e `multimodal-products` adaptados para `Pipeline` (DataSource + transform fn)
+  - `GCSLegalCasePDFSource` encapsula fases 1–3; `transform_legal_cases` faz Docling + embeddings
+  - Remove `GOOGLE_APPLICATION_CREDENTIALS` de `multimodal-products` (índices via Workload Identity)
+- Feature `refactor-hierarquical-cases-to-markdown`: ✅ implementação completa
+  - Novo conector `GCSMarkdownSource` lê `.md` de `gs://{bucket}/{prefix}` (output do cases-pdf-processor)
+  - `chunk_markdown` substitui `transform_legal_cases` — chunking heading-based + embeddings all-MiniLM-L6-v2
+  - Tabela Lance renomeada `hierarquical_cases` → `cases_chunks`; coluna `embedding_model` adicionada ao schema
+  - `GCS_PDF_PATH` / `DOCLING_CACHE_DIR` removidos de spark.yaml; `GCS_MD_PREFIX` adicionado
+  - `docling` removido do Dockerfile
 
 ## Blockers
 
