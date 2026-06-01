@@ -22,10 +22,12 @@
 - Feature `cases-pdf-processor`: ✅ implementação completa (T1–T10), pronto para `terraform apply`
 - Feature `spark-etl-framework`: ✅ implementação completa (T1–T9), 34/34 testes passando
 - Feature `adapt-jobs-to-spark-etl`: ✅ implementação completa (T1–T5), 41/41 testes passando
-  - `LanceSink` estendido com VectorIndexSpec, ScalarIndexSpec, FTSIndexSpec (discriminated union)
-  - `hierarquical-cases` e `multimodal-products` adaptados para `Pipeline` (DataSource + transform fn)
-  - `GCSLegalCasePDFSource` encapsula fases 1–3; `transform_legal_cases` faz Docling + embeddings
-  - Remove `GOOGLE_APPLICATION_CREDENTIALS` de `multimodal-products` (índices via Workload Identity)
+- Feature `cases-summarizer`: ✅ implementação completa (T1–T8), pronto para `terraform apply`
+  - `modules/keda/` — Helm module para instalar KEDA (chart_version=2.16.0)
+  - `modules/cases-summarizer/` — GCP SA, IAM GCS (prefix conditions), pull subscription com DLQ
+  - `apps/cases-summarizer/worker.py` — pull loop, pypdf extraction, OpenAI classification, embeddings all-MiniLM-L6-v2, Lance write
+  - `apps/cases-summarizer/` — Dockerfile (python:3.13-slim, uv, model pre-bake), pyproject.toml, image.tf, k8s.tf, keda.tf
+  - Root: `var.keda`, `var.cases_summarizer`, `var.openai_api_key` adicionados; módulos wired atrás de feature flags
 - Feature `refactor-hierarquical-cases-to-markdown`: ✅ implementação completa
   - Novo conector `GCSMarkdownSource` lê `.md` de `gs://{bucket}/{prefix}` (output do cases-pdf-processor)
   - `chunk_markdown` substitui `transform_legal_cases` — chunking heading-based + embeddings all-MiniLM-L6-v2

@@ -57,3 +57,18 @@ variable "paperclip" {
   default = false
 }
 
+variable "keda" {
+  type    = bool
+  default = false
+}
+
+variable "cases_summarizer" {
+  type    = bool
+  default = false
+}
+
+variable "openai_api_key" {
+  type      = string
+  sensitive = true
+}
+

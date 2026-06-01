@@ -244,3 +244,18 @@ module "paperclip" {
   vertex_region              = var.gcp_region
   workload_identity_sa_email = try(google_service_account.gke_workloads[0].email, "")
 }
+
+module "keda" {
+  count  = var.keda ? 1 : 0
+  source = "./modules/keda"
+}
+
+module "cases_summarizer" {
+  count            = var.cases_summarizer ? 1 : 0
+  source           = "./modules/cases-summarizer"
+  project          = data.google_project.default.project_id
+  region           = var.gcp_region
+  gcs_bucket       = "justeam"
+  gcs_events_topic = "projects/${data.google_project.default.project_id}/topics/cases-pdf-gcs-events"
+  dlq_topic        = "projects/${data.google_project.default.project_id}/topics/cases-pdf-gcs-events-dlq"
+}
