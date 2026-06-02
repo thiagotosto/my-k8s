@@ -18,6 +18,11 @@
 
 ## Active Work
 
+- Feature `lakehouse-mcp`: T1–T5 ✅ implemented (2026-06-01), T6 smoke test pending (needs `terraform apply`)
+  - `apps/lakehouse-mcp/` — server.py (FastMCP SSE port 8000, query_vector/fts/sql), pyproject.toml, Dockerfile, image.tf, providers.tf, variables.tf, terraform.tfvars, k8s.tf
+  - `.claude/skills/lakehouse-query/SKILL.md` + `.skill-meta.json`
+  - T6 smoke test: `cd apps/lakehouse-mcp && terraform apply`, then verify per tasks.md checklist
+
 - Feature `gke-migration`: spec/design/tasks criados, implementação pendente
 - Feature `cases-pdf-processor`: ✅ implementação completa (T1–T10), pronto para `terraform apply`
 - Feature `spark-etl-framework`: ✅ implementação completa (T1–T9), 34/34 testes passando
