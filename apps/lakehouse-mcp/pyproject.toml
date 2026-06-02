@@ -1,0 +1,16 @@
+[project]
+name = "lakehouse-mcp"
+version = "0.1.0"
+requires-python = ">=3.13"
+dependencies = [
+    "mcp[cli]>=1.0.0,<2",
+    "lancedb>=0.22.0,<1",
+    "sentence-transformers>=3.0.0,<4",
+    "trino>=0.329.0,<1",
+    "gcsfs>=2024.0.0",
+    "pyarrow>=18.0.0,<19",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
