@@ -4,13 +4,15 @@ from typing import Any
 
 import lancedb
 import trino.dbapi
+from lancedb.background_loop import LOOP
+from lancedb.table import LanceTable
 from mcp.server.fastmcp import FastMCP
 from sentence_transformers import SentenceTransformer
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger(__name__)
 
-model = SentenceTransformer("all-MiniLM-L6-v2")
+model = SentenceTransformer("rufimelo/Legal-BERTimbau-base")
 db = lancedb.connect(os.environ["LANCE_URI"])
 _tables: dict[str, Any] = {}
 
@@ -23,11 +25,15 @@ TRINO_HOST = os.environ.get("TRINO_HOST", "trino.trino.svc.cluster.local")
 TRINO_PORT = int(os.environ.get("TRINO_PORT", "8080"))
 
 
+_NAMESPACE = ["default"]
+
+
 def _get_table(name: str) -> Any:
     if name not in TABLES:
         raise ValueError(f"Unknown table: {name}")
     if name not in _tables:
-        _tables[name] = db.open_table(name)
+        async_tbl = LOOP.run(db._conn.open_table(name, namespace_path=_NAMESPACE))
+        _tables[name] = LanceTable(db, name, namespace_path=_NAMESPACE, _async=async_tbl)
     return _tables[name]
 
 

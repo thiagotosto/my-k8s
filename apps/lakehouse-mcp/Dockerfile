@@ -1,8 +1,7 @@
-FROM python:3.13-slim
-RUN pip install uv
+ARG BASE_IMAGE
+FROM ${BASE_IMAGE}
 WORKDIR /app
 COPY pyproject.toml .
 RUN uv pip install --system -r pyproject.toml
-RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('all-MiniLM-L6-v2')"
 COPY server.py /app/
 CMD ["python", "/app/server.py"]
