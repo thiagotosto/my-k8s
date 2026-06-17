@@ -1,5 +1,13 @@
 # my-k8s
 
+## Design principles
+
+Always create solutions that are:
+
+- **Replayable** — every operation must be idempotent and re-runnable from scratch with the same outcome. Prefer declarative tools (Terraform, Kubernetes manifests) over imperative scripts. Scripts that mutate state must be safe to run twice.
+- **Versionable** — all configuration, infrastructure, and application code lives in source control. No manual steps, no out-of-band state. Infrastructure is defined as code; secrets are referenced, never hardcoded.
+- **Scalable** — design for growth in data volume, job concurrency, and team size. Prefer parameterized modules over copy-pasted blocks. Avoid hardcoded resource limits or single-node assumptions.
+
 ## Folder structure
 
 ```
@@ -22,22 +30,3 @@
                     ├── job.py        # PySpark script
                     └── spark.yaml    # SparkApplication manifest
 ```
-
-## Architecture decisions
-
-### root
-- Kind cluster resources and top-level module wiring live here.
-
-### modules/
-- Define operators and Helm installations as Terraform HCL resources.
-- Use the `hashicorp/kubernetes` provider.
-
-### apps/
-- Define application instances (SparkApplication, FlinkCluster, etc.) as raw YAML files.
-- Use the `gavinbunney/kubectl` provider with `kubectl_manifest` to apply them.
-
-### apps/spark/
-- Spark jobs are organized under `jobs/<job-name>/` — each subfolder needs a `job.py` and a `spark.yaml`.
-- `script.tf` auto-discovers all jobs via `fileset` and creates a ConfigMap + SparkApplication for each.
-- ConfigMap naming convention: `spark-<job-name>-script` — the job's `spark.yaml` must reference this name.
-- Use the `excluded_jobs` variable in `terraform.tfvars` to skip specific jobs without deleting them.
