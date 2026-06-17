@@ -1,0 +1,88 @@
+apiVersion: sparkoperator.k8s.io/v1beta2
+kind: SparkApplication
+metadata:
+  name: cases-chunks
+  namespace: spark-jobs
+spec:
+  type: Python
+  mode: cluster
+  image: "us-central1-docker.pkg.dev/jusl-496520/my-k8s/spark-lance-gcs:4.0.2"
+  imagePullPolicy: IfNotPresent
+  mainApplicationFile: "local:///opt/spark/scripts/job.py"
+  sparkVersion: "4.0.2"
+  timeToLiveSeconds: 300
+  restartPolicy:
+    type: Never
+  sparkConf:
+    "spark.hadoop.fs.gs.impl": "com.google.cloud.hadoop.fs.gcs.GoogleHadoopFileSystem"
+    "spark.hadoop.fs.AbstractFileSystem.gs.impl": "com.google.cloud.hadoop.fs.gcs.GoogleHadoopFS"
+    "spark.hadoop.google.cloud.auth.type": "APPLICATION_DEFAULT"
+    "spark.sql.extensions": "org.lance.spark.extensions.LanceSparkSessionExtensions"
+    "spark.sql.catalog.sandbox": "org.lance.spark.LanceNamespaceSparkCatalog"
+    "spark.sql.catalog.sandbox.impl": "dir"
+    "spark.sql.catalog.sandbox.root": "gs://justeam/sandbox"
+  volumes:
+    - name: script
+      configMap:
+        name: spark-cases-chunks-script
+    - name: models
+      persistentVolumeClaim:
+        claimName: spark-models-pvc
+  driver:
+    cores: 1
+    memory: "4g"
+    serviceAccount: spark
+    initContainers:
+      - name: fix-model-permissions
+        image: busybox
+        command: ["sh", "-c", "chmod -R 777 /opt/spark/models"]
+        volumeMounts:
+          - name: models
+            mountPath: /opt/spark/models
+    nodeSelector:
+      pool: spark
+    tolerations:
+      - key: pool
+        operator: Equal
+        value: spark
+        effect: NoSchedule
+    env:
+      - name: GCS_BUCKET
+        value: justeam
+      - name: GCS_MD_PREFIX
+        value: raw/cases_md/
+      - name: HF_HOME
+        value: /opt/spark/models
+      - name: TORCH_HOME
+        value: /opt/spark/models/torch
+      - name: HF_HUB_OFFLINE
+        value: "0"
+    volumeMounts:
+      - name: script
+        mountPath: /opt/spark/scripts
+      - name: models
+        mountPath: /opt/spark/models
+
+  executor:
+    cores: 1
+    instances: 2
+    memory: "3g"
+    nodeSelector:
+      pool: spark
+    tolerations:
+      - key: pool
+        operator: Equal
+        value: spark
+        effect: NoSchedule
+    env:
+      - name: GCS_BUCKET
+        value: justeam
+      - name: HF_HOME
+        value: /opt/spark/models
+      - name: TORCH_HOME
+        value: /opt/spark/models/torch
+      - name: HF_HUB_OFFLINE
+        value: "0"
+    volumeMounts:
+      - name: models
+        mountPath: /opt/spark/models
