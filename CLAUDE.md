@@ -7,6 +7,7 @@ Always create solutions that are:
 - **Replayable** — every operation must be idempotent and re-runnable from scratch with the same outcome. Prefer declarative tools (Terraform, Kubernetes manifests) over imperative scripts. Scripts that mutate state must be safe to run twice.
 - **Versionable** — all configuration, infrastructure, and application code lives in source control. No manual steps, no out-of-band state. Infrastructure is defined as code; secrets are referenced, never hardcoded.
 - **Scalable** — design for growth in data volume, job concurrency, and team size. Prefer parameterized modules over copy-pasted blocks. Avoid hardcoded resource limits or single-node assumptions.
+- **Observable** — every app and job must expose metrics, logs, and traces from day one. Instrument with OpenTelemetry; export to the project's OTel Collector. No silent failures: errors must surface as metrics or structured log events, not just stdout noise.
 
 ## Folder structure
 
